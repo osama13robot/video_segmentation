@@ -4,12 +4,13 @@ Segment every object in a vertical (9:16) video with **two different computer-vi
 libraries** and render a **YouTube-Shorts-sized (1080x1920) split-screen comparison**
 video — one model on top, the other on the bottom, same footage, same frame.
 
-<p align="center">
-  <img src="results/contact_sheet.png" width="800" alt="Contact sheet: YOLO11-seg (top) vs Mask R-CNN (bottom) on three frames">
-</p>
+Two example domains so far, each showing a very different side of the same two
+models — see [Results across domains](#results-across-domains) below:
 
-[▶ Watch the full comparison video](results/comparison_output.mp4) ·
-[▶ Small preview](results/comparison_output_preview.mp4)
+| | Street scene | Citrus orchard |
+|---|---|---|
+| | [![Street contact sheet](results/street/contact_sheet.png)](results/street/comparison_output.mp4) | [![Citrus contact sheet](results/citrus/contact_sheet.png)](results/citrus/comparison_output.mp4) |
+| Video | [▶ full](results/street/comparison_output.mp4) · [▶ preview](results/street/comparison_output_preview.mp4) | [▶ full](results/citrus/comparison_output.mp4) |
 
 ## Why this project
 
@@ -59,42 +60,41 @@ input video (any size) --> resize/crop to 1080x1920
 - Output is piped straight into **ffmpeg** (H.264/yuv420p) — the format YouTube
   and every browser plays natively.
 
-## Results on the sample clip
+## Results across domains
 
-Full numbers: [`results/metrics_summary.csv`](results/metrics_summary.csv) ·
-Charts: [`results/metrics.png`](results/metrics.png)
+Full numbers: [`results/street/metrics_summary.csv`](results/street/metrics_summary.csv),
+[`results/citrus/metrics_summary.csv`](results/citrus/metrics_summary.csv)
 
-| Metric | YOLO11-seg (A) | Mask R-CNN (B) |
-|---|---:|---:|
-| Speed | **30.3 FPS** (33 ms/frame) | 4.1 FPS (242 ms/frame) |
-| Avg. objects / frame | 4.0 | **19.6** |
-| Distinct tracked IDs (449 frames) | **78** | 993 |
-| Temporal stability (IoU of same track, consecutive frames) | **0.88** | 0.71 |
-| Mask agreement (A vs B, mean IoU) | 0.51 | 0.51 |
+| Metric | Street — YOLO11 | Street — Mask R-CNN | Citrus — YOLO11 | Citrus — Mask R-CNN |
+|---|---:|---:|---:|---:|
+| Speed | **30.3 FPS** | 4.1 FPS | **15.3 FPS** | 2.0 FPS |
+| Avg. objects / frame | 4.0 | **19.6** | 14.2 | **74.6** |
+| Distinct tracked IDs | **78** | 993 | **89** | 2,091 |
+| Temporal stability | **0.88** | 0.71 | **0.71** | 0.62 |
+| A-vs-B agreement | 0.51 | 0.51 | 0.47 | 0.47 |
 
-<p align="center"><img src="results/metrics.png" width="700" alt="Metrics charts"></p>
+<p align="center">
+  <img src="results/street/metrics.png" width="410" alt="Street metrics charts">
+  <img src="results/citrus/metrics.png" width="410" alt="Citrus metrics charts">
+</p>
 
-**Reading these numbers** (input clip: a busy tram/street scene, 2160x3840
-source, 30 fps, 449 processed frames — see
-[`docs/RESULTS.md`](docs/RESULTS.md) for the full write-up):
-
-- **YOLO11-seg is ~7.3x faster** and its ByteTrack IDs are far more stable —
-  78 distinct IDs across the whole clip, close to the true number of people/
-  vehicles that ever appear.
-- **Mask R-CNN detects roughly 5x more objects per frame** — it picks up small,
-  distant, or partially occluded people that YOLO11 misses at this confidence
-  threshold. But without a proper tracker its ID count balloons to 993: the
-  simple IoU tracker in this repo loses and re-acquires objects constantly in
-  a crowd, which also drags its temporal-stability score down.
-- **Agreement of ~0.51** says the two models overlap on roughly half their
-  mask area on average — expected, since they're finding a different *number*
-  of objects to begin with. Frame-by-frame agreement is plotted in
-  `results/metrics.png` (bottom-right) and dips further whenever the crowd
-  gets denser.
-- **Takeaway:** neither number says who is "more correct" — there's no
-  ground truth for this clip. Mask R-CNN is the fairer per-frame detector,
-  YOLO11-seg + ByteTrack is the fairer *tracker*. See
-  [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md#limitations) for why.
+**The pattern holds across both domains, and gets more extreme on citrus:**
+Mask R-CNN consistently finds far more objects per frame than YOLO11-seg (5x on
+the street clip, **5.2x** in the orchard, where small, clustered, occluded
+fruit is an even harder case for a single-stage detector), at a large and
+consistent speed cost (~7x slower both times). Tracking degrades on both
+models when the scene changes from mostly-static street furniture/pedestrians
+to a panning shot over near-identical fruit — temporal stability drops from
+0.88/0.71 to 0.71/0.62, and track-ID counts explode (993 → 2,091 for Mask
+R-CNN) as the trackers lose and re-acquire near-duplicate objects. See
+[`docs/RESULTS.md`](docs/RESULTS.md) for the full write-up of each run,
+including a citrus-specific finding: both models, trained only on COCO's
+generic `orange`/`apple` classes, **misclassify some oranges as apples** —
+a clear sign general-purpose detectors aren't reliable for agricultural
+species identification without domain-specific training. See
+[`docs/METHODOLOGY.md`](docs/METHODOLOGY.md#limitations) for why none of
+these numbers say who is "more correct" — there's no ground truth for either
+clip.
 
 ## Repo structure
 
@@ -104,11 +104,17 @@ source, 30 fps, 449 processed frames — see
 │   ├── video_segmentation_split_screen.ipynb   # the Kaggle notebook (run this)
 │   └── build_notebook.py                        # generates the .ipynb from source (for diffs/PRs)
 ├── results/
-│   ├── comparison_output.mp4                     # full split-screen output (1080x1920)
-│   ├── comparison_output_preview.mp4             # small preview version
-│   ├── metrics_summary.csv                       # per-video summary metrics
-│   ├── metrics.png                               # summary charts
-│   └── contact_sheet.png                         # three sample frames
+│   ├── street/                                   # example 1: busy tram/street scene
+│   │   ├── comparison_output.mp4                 # full split-screen output (1080x1920)
+│   │   ├── comparison_output_preview.mp4         # small preview version
+│   │   ├── metrics_summary.csv                   # per-video summary metrics
+│   │   ├── metrics.png                           # summary charts
+│   │   └── contact_sheet.png                     # three sample frames
+│   └── citrus/                                   # example 2: citrus orchard (agriculture)
+│       ├── comparison_output.mp4
+│       ├── metrics_summary.csv
+│       ├── metrics.png
+│       └── contact_sheet.png
 ├── data/
 │   └── README.md                                 # how to get/point at input footage (not committed, see below)
 ├── docs/
@@ -134,11 +140,11 @@ Running locally instead of Kaggle works too — see
 
 ## Input footage / licensing
 
-The sample video used for `results/` came from Pexels. Pexels/Pixabay/Mixkit
-footage is **free to use but not public domain** — see
+The sample videos used for `results/` (street and citrus) came from Pexels.
+Pexels/Pixabay/Mixkit footage is **free to use but not public domain** — see
 [`data/README.md`](data/README.md) for the license note and why the raw input
-clip isn't committed to this repo (only the derived comparison video is, which
-is this project's own output).
+clips aren't committed to this repo (only the derived comparison videos are,
+which are this project's own output).
 
 ## Extending this
 
@@ -150,6 +156,28 @@ is this project's own output).
   differ.
 - Swap `CFG.LAYOUT`/`CFG.FIT` for a side-by-side layout or letterboxed
   (no-crop) framing.
+
+### Agriculture / precision-farming extensions
+
+The citrus run above shows COCO-pretrained models struggling with small,
+clustered, occluded fruit and mixing up species (`orange` vs `apple`). Ways
+to push this further, roughly cheapest to most involved:
+
+- **SAHI** (Slicing Aided Hyper Inference) — tiles each frame before running
+  either detector, then merges results. The standard fix for small/dense
+  objects, no retraining required; a natural "Model C" panel.
+- **CitDet** — a purpose-built in-orchard citrus detection dataset; fine-tune
+  YOLO on it for a fair citrus baseline instead of relying on COCO's generic
+  `orange` class.
+- **Roboflow Universe** — search "citrus"/"fruit counting" for community
+  fine-tuned YOLOv8/v11 checkpoints that drop straight into this repo's
+  `Segmenter` interface.
+- **PlantCV** — a full plant-phenotyping toolkit (segmentation + trait
+  extraction: fruit size, canopy area, leaf health), useful beyond counting.
+- **Other crops to try the same way:** grapes via **WGISD** (Wine Grape
+  Instance Segmentation Dataset — clusters, not single fruit), wheat via
+  **Global Wheat Head Detection** (dense, tiny, textured heads), or
+  strawberries/coffee cherries via Roboflow's ripeness-labeled sets.
 
 ## Reference
 

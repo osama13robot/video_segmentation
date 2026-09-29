@@ -1,6 +1,13 @@
 # Results
 
-## Input clip
+This repo has two example runs: a street scene and a citrus orchard. See both
+sections below; the street run is closer to the article's typical VOS test
+footage, the citrus run stress-tests the same pipeline on a harder,
+domain-specific scene (small, dense, occluded objects).
+
+## Example 1: Street scene
+
+### Input clip
 
 - Source: Pexels (portrait/vertical stock video), original resolution
   2160x3840, 30 fps, ~19.5s. See [`data/README.md`](../data/README.md) for
@@ -10,9 +17,9 @@
   tracking.
 - Processed: first ~15s resized/cropped to 1080x1920, 30 fps, **449 frames**.
 
-## Full metrics
+### Full metrics
 
-See [`metrics_summary.csv`](../results/metrics_summary.csv) for the raw row;
+See [`metrics_summary.csv`](../results/street/metrics_summary.csv) for the raw row;
 summarized here:
 
 | Metric | YOLO11-seg (A) | Mask R-CNN (B) |
@@ -24,14 +31,14 @@ summarized here:
 | Mean temporal stability (IoU, same ID, consecutive frames) | 0.884 | 0.713 |
 | Mean A-vs-B mask agreement | 0.513 | 0.513 |
 
-Charts: [`metrics.png`](../results/metrics.png) — speed, agreement, temporal
+Charts: [`metrics.png`](../results/street/metrics.png) — speed, agreement, temporal
 stability, and agreement-over-time for the clip.
 
-Sample frames: [`contact_sheet.png`](../results/contact_sheet.png) — three
+Sample frames: [`contact_sheet.png`](../results/street/contact_sheet.png) — three
 frames (≈25%, 50%, 75% through the output video) with both models' overlays
 visible.
 
-## What the sample frames show
+### What the sample frames show
 
 Looking at `contact_sheet.png` (tram/street scene):
 
@@ -54,7 +61,7 @@ Looking at `contact_sheet.png` (tram/street scene):
   disagreement the "agreement" metric is meant to surface for closer
   inspection, rather than resolve automatically.
 
-## Interpretation
+### Interpretation
 
 - **Speed vs. recall trade-off, as expected:** YOLO11-seg's ~7.3x speed
   advantage comes with meaningfully lower recall in a dense scene (4.0 vs
@@ -74,7 +81,7 @@ Looking at `contact_sheet.png` (tram/street scene):
   ~110-120 and ~330-350 in `metrics.png` (bottom-right subplot) are good
   candidates to inspect manually for crowding or occlusion events.
 
-## Caveats specific to this run
+### Caveats specific to this run
 
 - Only ~15s of a ~19.5s clip was processed (`CFG.MAX_SECONDS = 12` at 30
   fps ≈ 449 frames after the fps cap) — a longer or different clip may shift
@@ -86,3 +93,89 @@ Looking at `contact_sheet.png` (tram/street scene):
   substantially on e.g. a single-subject sports clip or a static-camera
   product shot — the notebook is written to process a list of clips in one
   run for exactly this kind of comparison.
+
+## Example 2: Citrus orchard (agriculture)
+
+### Input clip
+
+- Source: Pexels (portrait/vertical stock video), 1080x1920, 60 fps. See
+  [`data/README.md`](../data/README.md) for the license note.
+- Scene: a panning shot across a citrus tree heavy with fruit — small, dense,
+  frequently occluded objects against similarly-colored foliage, and
+  continuous camera motion (unlike the mostly-static street scene).
+- Processed: **292 frames**.
+
+### Full metrics
+
+See [`metrics_summary.csv`](../results/citrus/metrics_summary.csv) for the
+raw row; summarized here:
+
+| Metric | YOLO11-seg (A) | Mask R-CNN (B) |
+|---|---:|---:|
+| Mean inference time | 65.5 ms/frame | 508.4 ms/frame |
+| Speed | 15.3 FPS | 2.0 FPS |
+| Mean objects detected / frame | 14.2 | 74.6 |
+| Distinct track IDs (whole clip) | 89 | 2,091 |
+| Mean temporal stability (IoU, same ID, consecutive frames) | 0.710 | 0.624 |
+| Mean A-vs-B mask agreement | 0.468 | 0.468 |
+
+Charts: [`metrics.png`](../results/citrus/metrics.png). Sample frames:
+[`contact_sheet.png`](../results/citrus/contact_sheet.png) — three frames
+across the clip with both models' overlays visible.
+
+### What the sample frames show
+
+- **YOLO11-seg (top row)** finds the larger, less-occluded oranges near the
+  edges of the canopy — 8 to 19 per frame across the three samples — all
+  labeled `orange` with moderate confidence (0.4-0.65). It misses most fruit
+  clustered deeper in the foliage.
+- **Mask R-CNN (bottom row)** finds dramatically more — 75 to 78 per
+  frame — including small, partially hidden fruit YOLO11 never surfaces.
+  Confidence on these extra detections spans a wide range (0.35 to 0.99).
+- **Misclassification:** several fruit are labeled `apple` (purple boxes) by
+  Mask R-CNN rather than `orange`, on objects that are visibly oranges.
+  YOLO11 does not show this error as often in these samples, but neither
+  model was trained on citrus specifically — both are relying on COCO's
+  generic `orange`/`apple` classes, which were never designed to
+  disambiguate citrus cultivars under orchard lighting, size variation, and
+  partial occlusion. This is the clearest actionable finding in this run: a
+  COCO-pretrained model is not a reliable species classifier for agricultural
+  fruit, however good its detection recall.
+
+### Interpretation
+
+- **The recall gap between models widens on harder, domain-specific scenes.**
+  Mask R-CNN found ~5.2x more fruit per frame here (74.6 vs 14.2), a larger
+  ratio than the ~5x gap on the street scene — consistent with two-stage
+  detectors' region-proposal step giving it an edge on small, dense, occluded
+  objects. For a yield-estimation use case, YOLO11-seg here is likely
+  **undercounting fruit substantially**.
+- **Tracking breaks down further than on the street scene.** Temporal
+  stability fell for both models (0.88 → 0.71 for YOLO11-seg/ByteTrack,
+  0.71 → 0.62 for Mask R-CNN's IoU tracker) and track-ID counts exploded
+  (993 → 2,091 for Mask R-CNN). This is expected: the camera pans
+  continuously and the fruit are visually near-identical to their neighbors,
+  which is close to a worst case for IoU-based frame-to-frame matching.
+  **Track count in this run should not be read as a fruit count** — it
+  mostly reflects tracker failure, not the true number of oranges in the
+  tree.
+- **Agreement (~0.47) is lower than the street scene's ~0.51**, again
+  consistent with the two models finding substantially different numbers of
+  small objects to begin with.
+- **Practical takeaway:** neither model, used off-the-shelf, is suitable for
+  production fruit counting or species-accurate yield estimation. See the
+  README's [Agriculture / precision-farming extensions](../README.md#agriculture--precision-farming-extensions)
+  section for domain-specific datasets and models (CitDet, SAHI, Roboflow
+  citrus checkpoints) that would address the recall and misclassification
+  issues seen here.
+
+### Caveats specific to this run
+
+- One clip, one tree, one lighting condition — fruit density, occlusion, and
+  lighting vary a lot across real orchards; these numbers shouldn't be
+  read as general "YOLO vs Mask R-CNN for citrus" conclusions.
+- `CFG.CONF = 0.35` (both models) again controls the whole precision/recall
+  balance shown here.
+- The continuous camera pan is a harder tracking case than a fixed
+  surveillance-style camera would be; a static orchard camera (e.g. a
+  fixed row-scanning rig) would likely show smaller track-ID inflation.
