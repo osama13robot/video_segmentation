@@ -1,0 +1,21 @@
+# Raw input footage (licensing — see data/README.md)
+data/*.mp4
+data/*.mov
+data/*.avi
+
+# Local run artifacts
+work/
+outputs/
+previews/
+*.pt
+*.pth
+credits.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store

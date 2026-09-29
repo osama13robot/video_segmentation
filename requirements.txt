@@ -1,0 +1,23 @@
+# Core CV / ML
+ultralytics>=8.3.0        # YOLO11-seg
+torch>=2.2.0
+torchvision>=0.17.0       # Mask R-CNN (maskrcnn_resnet50_fpn_v2)
+
+# Video / image processing
+opencv-python-headless>=4.9.0
+numpy>=1.26.0
+
+# Data & plotting
+pandas>=2.2.0
+matplotlib>=3.8.0
+
+# Downloading stock footage (optional, Pexels)
+requests>=2.31.0
+
+# Notebook tooling
+nbformat>=5.10.0
+ipython>=8.20.0
+jupyter>=1.0.0
+
+# Note: also requires the `ffmpeg` binary on PATH (not a pip package).
+# apt install ffmpeg  /  brew install ffmpeg
