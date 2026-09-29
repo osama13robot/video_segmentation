@@ -1,0 +1,2 @@
+video,frames,ms_A,ms_B,fps_A,fps_B,objects_A,objects_B,tracks_A,tracks_B,agreement,stability_A,stability_B,output
+harvesting,449,27.284659182627614,211.08346949220575,36.6506318919574,4.737462400090619,2.4743875278396437,10.804008908685969,3,195,0.5260377511017041,0.9607079964397209,0.9533550153885569,harvesting_split_YOLO11-seg_vs_MaskR-CNN.mp4

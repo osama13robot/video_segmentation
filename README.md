@@ -4,13 +4,13 @@ Segment every object in a vertical (9:16) video with **two different computer-vi
 libraries** and render a **YouTube-Shorts-sized (1080x1920) split-screen comparison**
 video — one model on top, the other on the bottom, same footage, same frame.
 
-Two example domains so far, each showing a very different side of the same two
-models — see [Results across domains](#results-across-domains) below:
+Three example domains so far, each showing a very different side of the same
+two models — see [Results across domains](#results-across-domains) below:
 
-| | Street scene | Citrus orchard |
-|---|---|---|
-| | [![Street contact sheet](results/street/contact_sheet.png)](results/street/comparison_output.mp4) | [![Citrus contact sheet](results/citrus/contact_sheet.png)](results/citrus/comparison_output.mp4) |
-| Video | [▶ full](results/street/comparison_output.mp4) · [▶ preview](results/street/comparison_output_preview.mp4) | [▶ full](results/citrus/comparison_output.mp4) |
+| | Street scene | Citrus orchard | Post-harvest sorting |
+|---|---|---|---|
+| | [![Street contact sheet](results/street/contact_sheet.png)](results/street/comparison_output.mp4) | [![Citrus contact sheet](results/citrus/contact_sheet.png)](results/citrus/comparison_output.mp4) | [![Harvesting contact sheet](results/harvesting/contact_sheet.png)](results/harvesting/comparison_output.mp4) |
+| Video | [▶ full](results/street/comparison_output.mp4) · [▶ preview](results/street/comparison_output_preview.mp4) | [▶ full](results/citrus/comparison_output.mp4) | [▶ full](results/harvesting/comparison_output.mp4) |
 
 ## Why this project
 
@@ -63,38 +63,47 @@ input video (any size) --> resize/crop to 1080x1920
 ## Results across domains
 
 Full numbers: [`results/street/metrics_summary.csv`](results/street/metrics_summary.csv),
-[`results/citrus/metrics_summary.csv`](results/citrus/metrics_summary.csv)
+[`results/citrus/metrics_summary.csv`](results/citrus/metrics_summary.csv),
+[`results/harvesting/metrics_summary.csv`](results/harvesting/metrics_summary.csv)
 
-| Metric | Street — YOLO11 | Street — Mask R-CNN | Citrus — YOLO11 | Citrus — Mask R-CNN |
-|---|---:|---:|---:|---:|
-| Speed | **30.3 FPS** | 4.1 FPS | **15.3 FPS** | 2.0 FPS |
-| Avg. objects / frame | 4.0 | **19.6** | 14.2 | **74.6** |
-| Distinct tracked IDs | **78** | 993 | **89** | 2,091 |
-| Temporal stability | **0.88** | 0.71 | **0.71** | 0.62 |
-| A-vs-B agreement | 0.51 | 0.51 | 0.47 | 0.47 |
+| Metric | Street — YOLO11 | Street — Mask R-CNN | Citrus — YOLO11 | Citrus — Mask R-CNN | Harvesting — YOLO11 | Harvesting — Mask R-CNN |
+|---|---:|---:|---:|---:|---:|---:|
+| Speed | **30.3 FPS** | 4.1 FPS | **15.3 FPS** | 2.0 FPS | **36.7 FPS** | 4.7 FPS |
+| Avg. objects / frame | 4.0 | **19.6** | 14.2 | **74.6** | 2.5 | **10.8** |
+| Distinct tracked IDs | **78** | 993 | **89** | 2,091 | **3** | 195 |
+| Temporal stability | **0.88** | 0.71 | 0.71 | 0.62 | **0.96** | 0.95 |
+| A-vs-B agreement | 0.51 | 0.51 | 0.47 | 0.47 | 0.53 | 0.53 |
 
 <p align="center">
-  <img src="results/street/metrics.png" width="410" alt="Street metrics charts">
-  <img src="results/citrus/metrics.png" width="410" alt="Citrus metrics charts">
+  <img src="results/street/metrics.png" width="270" alt="Street metrics charts">
+  <img src="results/citrus/metrics.png" width="270" alt="Citrus metrics charts">
+  <img src="results/harvesting/metrics.png" width="270" alt="Harvesting metrics charts">
 </p>
 
-**The pattern holds across both domains, and gets more extreme on citrus:**
-Mask R-CNN consistently finds far more objects per frame than YOLO11-seg (5x on
-the street clip, **5.2x** in the orchard, where small, clustered, occluded
-fruit is an even harder case for a single-stage detector), at a large and
-consistent speed cost (~7x slower both times). Tracking degrades on both
-models when the scene changes from mostly-static street furniture/pedestrians
-to a panning shot over near-identical fruit — temporal stability drops from
-0.88/0.71 to 0.71/0.62, and track-ID counts explode (993 → 2,091 for Mask
-R-CNN) as the trackers lose and re-acquire near-duplicate objects. See
-[`docs/RESULTS.md`](docs/RESULTS.md) for the full write-up of each run,
-including a citrus-specific finding: both models, trained only on COCO's
-generic `orange`/`apple` classes, **misclassify some oranges as apples** —
-a clear sign general-purpose detectors aren't reliable for agricultural
-species identification without domain-specific training. See
-[`docs/METHODOLOGY.md`](docs/METHODOLOGY.md#limitations) for why none of
-these numbers say who is "more correct" — there's no ground truth for either
-clip.
+**Each domain breaks the two models in a different way.** Mask R-CNN
+consistently finds far more objects per frame than YOLO11-seg (5x street,
+**5.2x** citrus, **4.4x** harvesting), always at a large speed cost (~5-8x
+slower). But *why* the gap opens differs by scene:
+
+- **Street:** a genuine recall difference — Mask R-CNN catches small/distant
+  pedestrians YOLO11 misses at this confidence threshold.
+- **Citrus:** recall *and* a species-classification error — some oranges get
+  labeled `apple` by both COCO-pretrained models, since neither was trained
+  to tell citrus cultivars apart.
+- **Harvesting:** a **vocabulary gap**, the most severe of the three. COCO
+  has no class for onions/crates/harvest baskets, so YOLO11 mostly declines
+  to label anything (2.5 objects/frame, high stability at 0.96 — a more
+  honest failure), while Mask R-CNN hallucinates the nearest known class
+  onto the scene: a basket of onions becomes `bowl` + `apple`, plus stray
+  `cell phone`/`donut`/`cup` labels. Its 195 track IDs here (vs YOLO11's 3)
+  reflect the tracker faithfully following a sequence of *wrong* labels, not
+  fast motion — the camera is mostly static in this clip, unlike citrus's
+  panning shot.
+
+See [`docs/RESULTS.md`](docs/RESULTS.md) for the full write-up of all three
+runs, and [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md#limitations) for why
+none of these numbers say who is "more correct" — there's no ground truth
+for any of the clips.
 
 ## Repo structure
 
@@ -110,7 +119,12 @@ clip.
 │   │   ├── metrics_summary.csv                   # per-video summary metrics
 │   │   ├── metrics.png                           # summary charts
 │   │   └── contact_sheet.png                     # three sample frames
-│   └── citrus/                                   # example 2: citrus orchard (agriculture)
+│   ├── citrus/                                    # example 2: citrus orchard (agriculture)
+│   │   ├── comparison_output.mp4
+│   │   ├── metrics_summary.csv
+│   │   ├── metrics.png
+│   │   └── contact_sheet.png
+│   └── harvesting/                                # example 3: post-harvest sorting (out-of-vocabulary objects)
 │       ├── comparison_output.mp4
 │       ├── metrics_summary.csv
 │       ├── metrics.png
@@ -140,7 +154,7 @@ Running locally instead of Kaggle works too — see
 
 ## Input footage / licensing
 
-The sample videos used for `results/` (street and citrus) came from Pexels.
+The sample videos used for `results/` (street, citrus, harvesting) came from Pexels.
 Pexels/Pixabay/Mixkit footage is **free to use but not public domain** — see
 [`data/README.md`](data/README.md) for the license note and why the raw input
 clips aren't committed to this repo (only the derived comparison videos are,
@@ -178,6 +192,13 @@ to push this further, roughly cheapest to most involved:
   Instance Segmentation Dataset — clusters, not single fruit), wheat via
   **Global Wheat Head Detection** (dense, tiny, textured heads), or
   strawberries/coffee cherries via Roboflow's ripeness-labeled sets.
+- **For bulk/uniform produce (onions, garlic, grain — see the harvesting
+  example) instance segmentation may be the wrong tool entirely.** COCO has
+  no class for these, so both models here hallucinate a nearest-match label
+  instead of counting correctly. Density-map counting approaches (e.g.
+  CSRNet, P2PNet-style point counting) that regress a count directly from
+  the image, rather than detecting individual instances, are the more
+  standard fit for this kind of scene.
 
 ## Reference
 

@@ -1,9 +1,10 @@
 # Results
 
-This repo has two example runs: a street scene and a citrus orchard. See both
-sections below; the street run is closer to the article's typical VOS test
-footage, the citrus run stress-tests the same pipeline on a harder,
-domain-specific scene (small, dense, occluded objects).
+This repo has three example runs: a street scene, a citrus orchard, and a
+post-harvest sorting clip. The street run is closer to the article's typical
+VOS test footage; citrus stress-tests small/dense/occluded objects; the
+harvesting run stress-tests something harder still — objects with **no
+matching COCO class at all**.
 
 ## Example 1: Street scene
 
@@ -179,3 +180,88 @@ across the clip with both models' overlays visible.
 - The continuous camera pan is a harder tracking case than a fixed
   surveillance-style camera would be; a static orchard camera (e.g. a
   fixed row-scanning rig) would likely show smaller track-ID inflation.
+
+## Example 3: Post-harvest sorting (out-of-vocabulary objects)
+
+### Input clip
+
+- Source: Pexels (portrait/vertical stock video). See
+  [`data/README.md`](../data/README.md) for the license note.
+- Scene: a mostly-static, handheld shot of someone sorting onions/shallots
+  into wire baskets/crates by hand — none of these object types (onion,
+  garlic, wire basket, harvest crate) exist as a COCO class.
+- Processed: **449 frames**.
+
+### Full metrics
+
+See [`metrics_summary.csv`](../results/harvesting/metrics_summary.csv) for
+the raw row; summarized here:
+
+| Metric | YOLO11-seg (A) | Mask R-CNN (B) |
+|---|---:|---:|
+| Mean inference time | 27.3 ms/frame | 211.1 ms/frame |
+| Speed | 36.7 FPS | 4.7 FPS |
+| Mean objects detected / frame | 2.5 | 10.8 |
+| Distinct track IDs (whole clip) | 3 | 195 |
+| Mean temporal stability (IoU, same ID, consecutive frames) | 0.961 | 0.953 |
+| Mean A-vs-B mask agreement | 0.526 | 0.526 |
+
+Charts: [`metrics.png`](../results/harvesting/metrics.png). Sample frames:
+[`contact_sheet.png`](../results/harvesting/contact_sheet.png).
+
+### What the sample frames show
+
+- **YOLO11-seg (top row)** finds almost nothing — 2-3 objects/frame across
+  the samples, essentially only `person` (the worker), with one stray
+  `suitcase` label momentarily placed on the crate (frame 224, 0.52
+  confidence). It largely declines to label the onions or containers at all.
+- **Mask R-CNN (bottom row)** finds far more (10.8/frame average) by
+  substituting the nearest COCO class it has for each unfamiliar object: the
+  wire basket becomes `bowl` (0.43-0.65) or `dining table` (0.37-0.49), the
+  onions inside become `apple` (0.52-0.65), and single frames add spurious
+  `cell phone`, `donut`, and `cup` labels. None of these are correct.
+- **This is a different failure mode from citrus.** In the citrus run, both
+  models had a real (if imperfect) class to reach for (`orange`) and
+  sometimes reached for a neighboring one (`apple`) — a narrow
+  classification error. Here, there is **no correct class available at
+  all**, and the two models respond differently: YOLO11-seg mostly abstains
+  (arguably the more honest behavior for a system feeding downstream
+  decisions), while Mask R-CNN forces a confident, wrong label onto the
+  scene.
+
+### Interpretation
+
+- **Track-ID inflation here does not mean tracking failure from motion**,
+  unlike citrus. Temporal stability is the *highest* of all three example
+  runs for both models (0.961/0.953) — the camera is mostly static/handheld,
+  not panning. Mask R-CNN's 195 IDs (vs YOLO11's 3) instead reflect its
+  tracker faithfully following a *sequence of different wrong labels* over
+  time (bowl → suitcase-adjacent → bowl again, etc.) as if each relabeling
+  were a new object.
+- **Agreement (~0.53) is misleadingly "normal"-looking** — similar in
+  magnitude to the street scene's 0.51 — but here it mostly reflects the two
+  models occasionally agreeing on *which pixels* belong to the basket, not
+  on *what it is*. Mask agreement doesn't capture class correctness at all,
+  which is a real limitation of this metric worth flagging if you show this
+  clip alongside the others.
+- **Practical takeaway:** this is the strongest evidence across the three
+  runs that off-the-shelf, COCO-trained detectors are the wrong tool the
+  moment a scene's objects fall outside COCO's 80 classes. Fine-tuning
+  (or a purpose-built model) isn't optional here the way it might arguably
+  be skippable for citrus — without it, one of the two models actively
+  fabricates plausible-looking but false labels. See the README's
+  [Agriculture / precision-farming extensions](../README.md#agriculture--precision-farming-extensions)
+  section, which also notes that for bulk/uniform produce like this,
+  density-map counting approaches (e.g. CSRNet, P2PNet) are typically a
+  better fit than instance segmentation entirely.
+
+### Caveats specific to this run
+
+- One clip, one crop, one lighting/container setup — a different bulk
+  produce or a different camera angle would very likely still fail, but not
+  necessarily in the same way (different hallucinated classes).
+- `CFG.CONF = 0.35` (both models) again controls the whole precision/recall
+  balance shown here; a much lower threshold might reveal more of Mask
+  R-CNN's hallucinated classes, not fewer.
+- No ground truth exists to quantify "how wrong" the hallucinated labels
+  are beyond visual inspection of the contact sheet and video.
