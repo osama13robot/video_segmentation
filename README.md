@@ -4,13 +4,13 @@ Segment every object in a vertical (9:16) video with **two different computer-vi
 libraries** and render a **YouTube-Shorts-sized (1080x1920) split-screen comparison**
 video — one model on top, the other on the bottom, same footage, same frame.
 
-Four example domains so far, each showing a very different side of the same
+Five example domains so far, each showing a very different side of the same
 two models — see [Results across domains](#results-across-domains) below:
 
-| | Street scene | Citrus orchard | Post-harvest sorting | Poultry farm |
-|---|---|---|---|---|
-| | [![Street contact sheet](results/street/contact_sheet.png)](results/street/comparison_output.mp4) | [![Citrus contact sheet](results/citrus/contact_sheet.png)](results/citrus/comparison_output.mp4) | [![Harvesting contact sheet](results/harvesting/contact_sheet.png)](results/harvesting/comparison_output.mp4) | [![Poultry contact sheet](results/poultry/contact_sheet.png)](results/poultry/comparison_output.mp4) |
-| Video | [▶ full](results/street/comparison_output.mp4) · [▶ preview](results/street/comparison_output_preview.mp4) | [▶ full](results/citrus/comparison_output.mp4) | [▶ full](results/harvesting/comparison_output.mp4) | [▶ full](results/poultry/comparison_output.mp4) |
+| | Street scene | Citrus orchard | Post-harvest sorting | Poultry farm | Aquarium |
+|---|---|---|---|---|---|
+| | [![Street contact sheet](results/street/contact_sheet.png)](results/street/comparison_output.mp4) | [![Citrus contact sheet](results/citrus/contact_sheet.png)](results/citrus/comparison_output.mp4) | [![Harvesting contact sheet](results/harvesting/contact_sheet.png)](results/harvesting/comparison_output.mp4) | [![Poultry contact sheet](results/poultry/contact_sheet.png)](results/poultry/comparison_output.mp4) | [![Aquarium contact sheet](results/aquarium/contact_sheet.png)](results/aquarium/comparison_output.mp4) |
+| Video | [▶ full](results/street/comparison_output.mp4) · [▶ preview](results/street/comparison_output_preview.mp4) | [▶ full](results/citrus/comparison_output.mp4) | [▶ full](results/harvesting/comparison_output.mp4) | [▶ full](results/poultry/comparison_output.mp4) | [▶ full](results/aquarium/comparison_output.mp4) |
 
 ## Why this project
 
@@ -65,21 +65,23 @@ input video (any size) --> resize/crop to 1080x1920
 Full numbers: [`results/street/metrics_summary.csv`](results/street/metrics_summary.csv),
 [`results/citrus/metrics_summary.csv`](results/citrus/metrics_summary.csv),
 [`results/harvesting/metrics_summary.csv`](results/harvesting/metrics_summary.csv),
-[`results/poultry/metrics_summary.csv`](results/poultry/metrics_summary.csv)
+[`results/poultry/metrics_summary.csv`](results/poultry/metrics_summary.csv),
+[`results/aquarium/metrics_summary.csv`](results/aquarium/metrics_summary.csv)
 
-| Metric | Street — YOLO11 | Street — Mask R-CNN | Citrus — YOLO11 | Citrus — Mask R-CNN | Harvesting — YOLO11 | Harvesting — Mask R-CNN | Poultry — YOLO11 | Poultry — Mask R-CNN |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Speed | **30.3 FPS** | 4.1 FPS | **15.3 FPS** | 2.0 FPS | **36.7 FPS** | 4.7 FPS | **25.4 FPS** | 3.7 FPS |
-| Avg. objects / frame | 4.0 | **19.6** | 14.2 | **74.6** | 2.5 | **10.8** | 7.0 | **28.1** |
-| Distinct tracked IDs | **78** | 993 | **89** | 2,091 | **3** | 195 | **59** | 1,011 |
-| Temporal stability | **0.88** | 0.71 | 0.71 | 0.62 | **0.96** | 0.95 | **0.93** | 0.87 |
-| A-vs-B agreement | 0.51 | 0.51 | 0.47 | 0.47 | 0.53 | 0.53 | 0.53 | 0.53 |
+| Metric | Street — YOLO11 | Street — Mask R-CNN | Citrus — YOLO11 | Citrus — Mask R-CNN | Harvesting — YOLO11 | Harvesting — Mask R-CNN | Poultry — YOLO11 | Poultry — Mask R-CNN | Aquarium — YOLO11 | Aquarium — Mask R-CNN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Speed | **30.3 FPS** | 4.1 FPS | **15.3 FPS** | 2.0 FPS | **36.7 FPS** | 4.7 FPS | **25.4 FPS** | 3.7 FPS | **29.3 FPS** | 4.9 FPS |
+| Avg. objects / frame | 4.0 | **19.6** | 14.2 | **74.6** | 2.5 | **10.8** | 7.0 | **28.1** | 5.3 | **9.0** |
+| Distinct tracked IDs | **78** | 993 | **89** | 2,091 | **3** | 195 | **59** | 1,011 | **39** | 263 |
+| Temporal stability | **0.88** | 0.71 | 0.71 | 0.62 | **0.96** | 0.95 | **0.93** | 0.87 | **0.89** | 0.86 |
+| A-vs-B agreement | 0.51 | 0.51 | 0.47 | 0.47 | 0.53 | 0.53 | 0.53 | 0.53 | **0.59** | **0.59** |
 
 <p align="center">
-  <img src="results/street/metrics.png" width="210" alt="Street metrics charts">
-  <img src="results/citrus/metrics.png" width="210" alt="Citrus metrics charts">
-  <img src="results/harvesting/metrics.png" width="210" alt="Harvesting metrics charts">
-  <img src="results/poultry/metrics.png" width="210" alt="Poultry metrics charts">
+  <img src="results/street/metrics.png" width="170" alt="Street metrics charts">
+  <img src="results/citrus/metrics.png" width="170" alt="Citrus metrics charts">
+  <img src="results/harvesting/metrics.png" width="170" alt="Harvesting metrics charts">
+  <img src="results/poultry/metrics.png" width="170" alt="Poultry metrics charts">
+  <img src="results/aquarium/metrics.png" width="170" alt="Aquarium metrics charts">
 </p>
 
 **Each domain breaks the two models in a different way.** Mask R-CNN
@@ -107,8 +109,19 @@ extra detections are, differs by scene:
   arguably the most dangerous variant so far: most of the frame is correct,
   which makes the scattered wrong labels easy to miss compared to
   harvesting's more obviously-wrong output.
+- **Aquarium (goldfish):** another full vocabulary gap — COCO has no `fish`
+  class — but with a twist: **both models converge on the same wrong
+  label**, `bird`, for most fish (elongated fins/tails apparently pattern-
+  match `bird` silhouettes better than anything else COCO knows), which is
+  why agreement here (**0.59**) is the highest of all five runs despite
+  neither model being remotely correct about *what* the objects are. Mask
+  R-CNN adds its own hallucinations on top (`teddy bear` on fluffy-finned
+  fantail goldfish, `kite`/`person` on light reflections), and YOLO11-seg
+  has its **only complete zero-detection frame across all five runs**
+  during this clip's densest fish cluster — a silent full dropout rather
+  than a degraded-but-present result.
 
-See [`docs/RESULTS.md`](docs/RESULTS.md) for the full write-up of all four
+See [`docs/RESULTS.md`](docs/RESULTS.md) for the full write-up of all five
 runs, and [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md#limitations) for why
 none of these numbers say who is "more correct" — there's no ground truth
 for any of the clips.
@@ -137,7 +150,12 @@ for any of the clips.
 │   │   ├── metrics_summary.csv
 │   │   ├── metrics.png
 │   │   └── contact_sheet.png
-│   └── poultry/                                   # example 4: poultry farm (in-vocabulary but fragmented/hallucinated)
+│   ├── poultry/                                   # example 4: poultry farm (in-vocabulary but fragmented/hallucinated)
+│   │   ├── comparison_output.mp4
+│   │   ├── metrics_summary.csv
+│   │   ├── metrics.png
+│   │   └── contact_sheet.png
+│   └── aquarium/                                  # example 5: aquarium goldfish (vocabulary gap + convergent mislabel)
 │       ├── comparison_output.mp4
 │       ├── metrics_summary.csv
 │       ├── metrics.png
@@ -167,7 +185,8 @@ Running locally instead of Kaggle works too — see
 
 ## Input footage / licensing
 
-The sample videos used for `results/` (street, citrus, harvesting, poultry) came from Pexels.
+The sample videos used for `results/` (street, citrus, harvesting, poultry,
+aquarium) came from Pexels.
 Pexels/Pixabay/Mixkit footage is **free to use but not public domain** — see
 [`data/README.md`](data/README.md) for the license note and why the raw input
 clips aren't committed to this repo (only the derived comparison videos are,
@@ -212,6 +231,49 @@ to push this further, roughly cheapest to most involved:
   CSRNet, P2PNet-style point counting) that regress a count directly from
   the image, rather than detecting individual instances, are the more
   standard fit for this kind of scene.
+
+### Aquaculture extensions, and where VLMs fit in
+
+The aquarium run above is the clearest demonstration in this repo of *why*
+class-agnostic segmentation plus a separate classifier beats a fixed
+80-class detector — COCO has no `fish` class, so both models fall back to
+whatever label best matches a fish's silhouette (`bird`, almost always) or
+texture (`teddy bear`, on fluffy fantail fins). That failure mode, and the
+value a VLM could add on top of it, generalizes directly to real aquaculture
+and aquarium-industry use cases:
+
+- **Species/individual ID is a zero-shot problem, not a fixed-class one.**
+  A closed-set detector like YOLO or Mask R-CNN needs retraining for every
+  new species; a VLM (GPT-4V/Gemini/LLaVA-class models) or a CLIP-style
+  zero-shot classifier can be *asked* "what species is this" or "does this
+  look like a healthy goldfish" without retraining — a much better fit for
+  hobbyist apps or multi-species facilities than fine-tuning a detector per
+  species.
+- **The right architecture for this repo's failure mode:** pair a
+  class-agnostic segmenter (e.g. **SAM/SAM2**, which finds "what regions are
+  objects" without needing `fish` in its training vocabulary) with a
+  VLM/CLIP classifier on each region, instead of relying on a fixed-vocabulary
+  detector's built-in labels. This directly fixes both problems seen here —
+  YOLO11's zero-detection dropout frame and Mask R-CNN's wrong-class
+  hallucinations.
+- **Health and welfare monitoring:** a VLM can turn a segmented fish crop
+  into a natural-language description ("visible fin rot," "reduced
+  swimming activity," "clamped fins") — useful for automated welfare
+  reports in aquaculture facilities or consumer tank-monitoring products,
+  where a plain detector only outputs a class label and a box.
+- **Behavioral/stress analysis:** combining per-frame tracking (as this repo
+  already does) with a VLM's description of behavior over a short clip
+  (schooling, erratic movement, surface gasping) could flag water-quality
+  issues earlier than manual observation.
+- **Existing real-world tools worth knowing about:** **Aquabyte** (salmon
+  aquaculture — biomass estimation and sea lice detection from underwater
+  camera feeds) and **Fishial.ai** (consumer-facing fish species
+  identification) are both operating in this space today and are useful
+  reference points for what a production system looks like.
+- **Datasets to fine-tune on, if going the closed-set route instead:**
+  **DeepFish** and **Fish4Knowledge** (underwater fish detection/
+  classification) are the closest equivalents to CitDet/WGISD/MinneApple
+  for this domain.
 
 ## Reference
 

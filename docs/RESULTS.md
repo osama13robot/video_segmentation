@@ -1,11 +1,13 @@
 # Results
 
-This repo has four example runs: a street scene, a citrus orchard, a
-post-harvest sorting clip, and a poultry farm. The street run is closer to
-the article's typical VOS test footage; citrus stress-tests small/dense/
-occluded objects; harvesting stress-tests objects with **no matching COCO
-class at all**; poultry stress-tests a scene where the class *does* exist
-but density and overlap still break both models, in a more easily-missed way.
+This repo has five example runs: a street scene, a citrus orchard, a
+post-harvest sorting clip, a poultry farm, and an aquarium. The street run is
+closer to the article's typical VOS test footage; citrus stress-tests small/
+dense/occluded objects; harvesting stress-tests objects with **no matching
+COCO class at all**; poultry stress-tests a scene where the class *does*
+exist but density and overlap still break both models, in a more
+easily-missed way; aquarium repeats the full-vocabulary-gap case from
+harvesting but with a different, more consistent failure pattern.
 
 ## Example 1: Street scene
 
@@ -358,3 +360,90 @@ Charts: [`metrics.png`](../results/poultry/metrics.png). Sample frames:
   is strictly necessary.
 - No ground-truth bird count exists for this clip, so neither model's
   object count can be checked against a true headcount.
+
+## Example 5: Aquarium (goldfish)
+
+### Input clip
+
+- Source: Pexels (portrait/vertical stock video), 2160x3840 source, 30 fps.
+  See [`data/README.md`](../data/README.md) for the license note.
+- Scene: goldfish (including fluffy-finned fantail varieties) swimming in an
+  aquarium, moderate camera/subject motion, occasional dense clustering.
+- Processed: **229 frames**.
+
+### Full metrics
+
+See [`metrics_summary.csv`](../results/aquarium/metrics_summary.csv) for the
+raw row; summarized here:
+
+| Metric | YOLO11-seg (A) | Mask R-CNN (B) |
+|---|---:|---:|
+| Mean inference time | 34.1 ms/frame | 202.4 ms/frame |
+| Speed | 29.3 FPS | 4.9 FPS |
+| Mean objects detected / frame | 5.3 | 9.0 |
+| Distinct track IDs (whole clip) | 39 | 263 |
+| Mean temporal stability (IoU, same ID, consecutive frames) | 0.887 | 0.861 |
+| Mean A-vs-B mask agreement | 0.587 | 0.587 |
+
+Charts: [`metrics.png`](../results/aquarium/metrics.png). Sample frames:
+[`contact_sheet.png`](../results/aquarium/contact_sheet.png).
+
+### What the sample frames show
+
+- **Both models label almost every fish `bird`.** COCO has no `fish` class,
+  and unlike harvesting's scattered hallucinations (`bowl`, `apple`,
+  `donut`, `cell phone`) or poultry's varied ones (`banana`, `cow`, `cat`,
+  `teddy bear`), here YOLO11-seg and Mask R-CNN largely **agree on the same
+  wrong label**. A goldfish's elongated fins and tail apparently produce a
+  silhouette closer to COCO's `bird` examples than to any other class —
+  plausible, since fins/tails and wings/tails share a similar elongated,
+  tapering shape from a side profile.
+- **Mask R-CNN adds its own extra hallucinations on top of `bird`:** a
+  fluffy white fantail goldfish is labeled `teddy bear` (0.40-0.88
+  confidence) in two of the three sampled frames — likely because its
+  textured, fuzzy-looking fins pattern-match fur texture. Frame 38 also
+  shows `kite` (0.36) and three separate `person` labels (0.55-0.89) on
+  what are bubbles/reflections in the tank, all confidently wrong.
+- **YOLO11-seg has a complete zero-detection frame** — frame 190 in the
+  contact sheet shows a cluster of white fantail goldfish with **0 objects
+  detected**, despite the same cluster being clearly visible and despite
+  Mask R-CNN still finding 6 objects (mislabeled) in the same frame. This
+  is the only total dropout frame shown across all five example runs in
+  this repo — every other run's worst case is *wrong* or *fragmented*
+  labels, not *zero* labels on a visibly populated frame.
+
+### Interpretation
+
+- **Agreement (0.587) is the highest of all five runs**, which is a good
+  illustration of why "agreement" alone is a limited metric (see
+  [`METHODOLOGY.md`](METHODOLOGY.md#2-why-the-metrics-here-are-proxies-not-j--f)):
+  it measures mask overlap, not label correctness. Both models finding
+  near-identical (wrong) `bird` masks on the same fish produces high
+  agreement despite neither model knowing what a goldfish actually is.
+- **The zero-detection frame is arguably the most operationally important
+  finding in this run.** A downstream system relying on YOLO11-seg's object
+  count (e.g. a fish counter or activity monitor) would silently record
+  "zero fish visible" for a frame that clearly has several — a failure mode
+  that's harder to catch automatically than a wrong label, since there's no
+  output to sanity-check against.
+- **Practical takeaway:** this is a clean real-world case for the
+  class-agnostic-segmenter-plus-classifier architecture discussed in the
+  README's
+  [Aquaculture extensions](../README.md#aquaculture-extensions-and-where-vlms-fit-in)
+  section — a SAM-style segmenter would likely still find the fish-shaped
+  regions in frame 190 (segmentation doesn't require knowing the class),
+  and a VLM/CLIP classifier on top could label them `fish` instead of
+  `bird`, without retraining either network end-to-end.
+
+### Caveats specific to this run
+
+- One tank, one lighting setup, one species mix (goldfish, including
+  fantail varieties) — clearer water, different species, or a top-down
+  camera angle could all change both the convergent-mislabeling pattern and
+  the dropout-frame behavior.
+- `CFG.CONF = 0.35` for both models; the frame-190 dropout may be partly a
+  threshold effect (YOLO11 finding low-confidence candidates it then
+  discards) rather than a total representation failure — worth checking by
+  lowering `CONF` and re-running just that frame range as a follow-up.
+- 229 frames is the shortest of the five example clips (~7.6s at 30 fps),
+  so these averages are based on less footage than the other four runs.
