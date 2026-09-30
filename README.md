@@ -4,13 +4,13 @@ Segment every object in a vertical (9:16) video with **two different computer-vi
 libraries** and render a **YouTube-Shorts-sized (1080x1920) split-screen comparison**
 video — one model on top, the other on the bottom, same footage, same frame.
 
-Five example domains so far, each showing a very different side of the same
+Six example domains so far, each showing a very different side of the same
 two models — see [Results across domains](#results-across-domains) below:
 
-| | Street scene | Citrus orchard | Post-harvest sorting | Poultry farm | Aquarium |
-|---|---|---|---|---|---|
-| | [![Street contact sheet](results/street/contact_sheet.png)](results/street/comparison_output.mp4) | [![Citrus contact sheet](results/citrus/contact_sheet.png)](results/citrus/comparison_output.mp4) | [![Harvesting contact sheet](results/harvesting/contact_sheet.png)](results/harvesting/comparison_output.mp4) | [![Poultry contact sheet](results/poultry/contact_sheet.png)](results/poultry/comparison_output.mp4) | [![Aquarium contact sheet](results/aquarium/contact_sheet.png)](results/aquarium/comparison_output.mp4) |
-| Video | [▶ full](results/street/comparison_output.mp4) · [▶ preview](results/street/comparison_output_preview.mp4) | [▶ full](results/citrus/comparison_output.mp4) | [▶ full](results/harvesting/comparison_output.mp4) | [▶ full](results/poultry/comparison_output.mp4) | [▶ full](results/aquarium/comparison_output.mp4) |
+| | Street scene | Citrus orchard | Post-harvest sorting | Poultry farm | Aquarium | Football |
+|---|---|---|---|---|---|---|
+| | [![Street contact sheet](results/street/contact_sheet.png)](results/street/comparison_output.mp4) | [![Citrus contact sheet](results/citrus/contact_sheet.png)](results/citrus/comparison_output.mp4) | [![Harvesting contact sheet](results/harvesting/contact_sheet.png)](results/harvesting/comparison_output.mp4) | [![Poultry contact sheet](results/poultry/contact_sheet.png)](results/poultry/comparison_output.mp4) | [![Aquarium contact sheet](results/aquarium/contact_sheet.png)](results/aquarium/comparison_output.mp4) | [![Football contact sheet](results/football/contact_sheet.png)](results/football/comparison_output_preview.mp4) |
+| Video | [▶ full](results/street/comparison_output.mp4) · [▶ preview](results/street/comparison_output_preview.mp4) | [▶ full](results/citrus/comparison_output.mp4) | [▶ full](results/harvesting/comparison_output.mp4) | [▶ full](results/poultry/comparison_output.mp4) | [▶ full](results/aquarium/comparison_output.mp4) | [▶ preview](results/football/comparison_output_preview.mp4) |
 
 ## Why this project
 
@@ -66,22 +66,24 @@ Full numbers: [`results/street/metrics_summary.csv`](results/street/metrics_summ
 [`results/citrus/metrics_summary.csv`](results/citrus/metrics_summary.csv),
 [`results/harvesting/metrics_summary.csv`](results/harvesting/metrics_summary.csv),
 [`results/poultry/metrics_summary.csv`](results/poultry/metrics_summary.csv),
-[`results/aquarium/metrics_summary.csv`](results/aquarium/metrics_summary.csv)
+[`results/aquarium/metrics_summary.csv`](results/aquarium/metrics_summary.csv),
+[`results/football/metrics_summary.csv`](results/football/metrics_summary.csv)
 
-| Metric | Street — YOLO11 | Street — Mask R-CNN | Citrus — YOLO11 | Citrus — Mask R-CNN | Harvesting — YOLO11 | Harvesting — Mask R-CNN | Poultry — YOLO11 | Poultry — Mask R-CNN | Aquarium — YOLO11 | Aquarium — Mask R-CNN |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Speed | **30.3 FPS** | 4.1 FPS | **15.3 FPS** | 2.0 FPS | **36.7 FPS** | 4.7 FPS | **25.4 FPS** | 3.7 FPS | **29.3 FPS** | 4.9 FPS |
-| Avg. objects / frame | 4.0 | **19.6** | 14.2 | **74.6** | 2.5 | **10.8** | 7.0 | **28.1** | 5.3 | **9.0** |
-| Distinct tracked IDs | **78** | 993 | **89** | 2,091 | **3** | 195 | **59** | 1,011 | **39** | 263 |
-| Temporal stability | **0.88** | 0.71 | 0.71 | 0.62 | **0.96** | 0.95 | **0.93** | 0.87 | **0.89** | 0.86 |
-| A-vs-B agreement | 0.51 | 0.51 | 0.47 | 0.47 | 0.53 | 0.53 | 0.53 | 0.53 | **0.59** | **0.59** |
+| Metric | Street — YOLO11 | Street — Mask R-CNN | Citrus — YOLO11 | Citrus — Mask R-CNN | Harvesting — YOLO11 | Harvesting — Mask R-CNN | Poultry — YOLO11 | Poultry — Mask R-CNN | Aquarium — YOLO11 | Aquarium — Mask R-CNN | Football — YOLO11 | Football — Mask R-CNN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Speed | **30.3 FPS** | 4.1 FPS | **15.3 FPS** | 2.0 FPS | **36.7 FPS** | 4.7 FPS | **25.4 FPS** | 3.7 FPS | **29.3 FPS** | 4.9 FPS | **20.0 FPS** | 2.8 FPS |
+| Avg. objects / frame | 4.0 | **19.6** | 14.2 | **74.6** | 2.5 | **10.8** | 7.0 | **28.1** | 5.3 | **9.0** | 11.8 | **47.0** |
+| Distinct tracked IDs | **78** | 993 | **89** | 2,091 | **3** | 195 | **59** | 1,011 | **39** | 263 | **87** | 2,950 |
+| Temporal stability | **0.88** | 0.71 | 0.71 | 0.62 | **0.96** | 0.95 | **0.93** | 0.87 | **0.89** | 0.86 | **0.88** | 0.82 |
+| A-vs-B agreement | 0.51 | 0.51 | 0.47 | 0.47 | 0.53 | 0.53 | 0.53 | 0.53 | **0.59** | **0.59** | 0.50 | 0.50 |
 
 <p align="center">
-  <img src="results/street/metrics.png" width="170" alt="Street metrics charts">
-  <img src="results/citrus/metrics.png" width="170" alt="Citrus metrics charts">
-  <img src="results/harvesting/metrics.png" width="170" alt="Harvesting metrics charts">
-  <img src="results/poultry/metrics.png" width="170" alt="Poultry metrics charts">
-  <img src="results/aquarium/metrics.png" width="170" alt="Aquarium metrics charts">
+  <img src="results/street/metrics.png" width="140" alt="Street metrics charts">
+  <img src="results/citrus/metrics.png" width="140" alt="Citrus metrics charts">
+  <img src="results/harvesting/metrics.png" width="140" alt="Harvesting metrics charts">
+  <img src="results/poultry/metrics.png" width="140" alt="Poultry metrics charts">
+  <img src="results/aquarium/metrics.png" width="140" alt="Aquarium metrics charts">
+  <img src="results/football/metrics.png" width="140" alt="Football metrics charts">
 </p>
 
 **Each domain breaks the two models in a different way.** Mask R-CNN
@@ -117,11 +119,22 @@ extra detections are, differs by scene:
   neither model being remotely correct about *what* the objects are. Mask
   R-CNN adds its own hallucinations on top (`teddy bear` on fluffy-finned
   fantail goldfish, `kite`/`person` on light reflections), and YOLO11-seg
-  has its **only complete zero-detection frame across all five runs**
+  has its **only complete zero-detection frame across all six runs**
   during this clip's densest fish cluster — a silent full dropout rather
   than a degraded-but-present result.
+- **Football:** the first domain where the base class isn't the problem —
+  `person` and `sports ball` are both real, well-represented COCO classes.
+  Mask R-CNN's extra detections (47.0 vs 11.8/frame, its widest gap yet at
+  **4.0x**) are largely *legitimate* recall on tiny, distant spectators in
+  the stands rather than wrong-class guesses. But real errors remain:
+  single players **fragmented** into multiple overlapping `person` masks
+  (echoing poultry), stadium seating hallucinated as `chair` even where it
+  overlaps players' legs, and one confident, entirely wrong `tennis racket`
+  label in a football stadium. Track-ID count is the highest of any run
+  (2,950), driven by dense, fast, mutually-occluding players rather than
+  panning or relabeling.
 
-See [`docs/RESULTS.md`](docs/RESULTS.md) for the full write-up of all five
+See [`docs/RESULTS.md`](docs/RESULTS.md) for the full write-up of all six
 runs, and [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md#limitations) for why
 none of these numbers say who is "more correct" — there's no ground truth
 for any of the clips.
@@ -155,8 +168,13 @@ for any of the clips.
 │   │   ├── metrics_summary.csv
 │   │   ├── metrics.png
 │   │   └── contact_sheet.png
-│   └── aquarium/                                  # example 5: aquarium goldfish (vocabulary gap + convergent mislabel)
-│       ├── comparison_output.mp4
+│   ├── aquarium/                                  # example 5: aquarium goldfish (vocabulary gap + convergent mislabel)
+│   │   ├── comparison_output.mp4
+│   │   ├── metrics_summary.csv
+│   │   ├── metrics.png
+│   │   └── contact_sheet.png
+│   └── football/                                  # example 6: football (in-vocabulary crowd — fragmentation, not vocabulary gap)
+│       ├── comparison_output_preview.mp4           # full-size output not committed (large file, see results/football notes)
 │       ├── metrics_summary.csv
 │       ├── metrics.png
 │       └── contact_sheet.png
@@ -186,7 +204,10 @@ Running locally instead of Kaggle works too — see
 ## Input footage / licensing
 
 The sample videos used for `results/` (street, citrus, harvesting, poultry,
-aquarium) came from Pexels.
+aquarium, football) came from Pexels. The football example ships only the
+downscaled preview video (the full-size output was too large to commit
+directly) — see [`data/README.md`](data/README.md) if you want to
+regenerate the full-size version yourself.
 Pexels/Pixabay/Mixkit footage is **free to use but not public domain** — see
 [`data/README.md`](data/README.md) for the license note and why the raw input
 clips aren't committed to this repo (only the derived comparison videos are,

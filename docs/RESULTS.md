@@ -1,13 +1,16 @@
 # Results
 
-This repo has five example runs: a street scene, a citrus orchard, a
-post-harvest sorting clip, a poultry farm, and an aquarium. The street run is
-closer to the article's typical VOS test footage; citrus stress-tests small/
-dense/occluded objects; harvesting stress-tests objects with **no matching
-COCO class at all**; poultry stress-tests a scene where the class *does*
-exist but density and overlap still break both models, in a more
-easily-missed way; aquarium repeats the full-vocabulary-gap case from
-harvesting but with a different, more consistent failure pattern.
+This repo has six example runs: a street scene, a citrus orchard, a
+post-harvest sorting clip, a poultry farm, an aquarium, and a football match.
+The street run is closer to the article's typical VOS test footage; citrus
+stress-tests small/dense/occluded objects; harvesting stress-tests objects
+with **no matching COCO class at all**; poultry stress-tests a scene where
+the class *does* exist but density and overlap still break both models, in a
+more easily-missed way; aquarium repeats the full-vocabulary-gap case from
+harvesting but with a different, more consistent failure pattern; football
+is the first run where the base class is squarely **in-vocabulary and
+well-represented** (`person`), isolating fragmentation and crowd-density
+errors from the vocabulary-gap problems seen in the previous three.
 
 ## Example 1: Street scene
 
@@ -447,3 +450,94 @@ Charts: [`metrics.png`](../results/aquarium/metrics.png). Sample frames:
   lowering `CONF` and re-running just that frame range as a follow-up.
 - 229 frames is the shortest of the five example clips (~7.6s at 30 fps),
   so these averages are based on less footage than the other four runs.
+
+## Example 6: Football
+
+### Input clip
+
+- Source: Pexels (portrait/vertical stock video), 1080x1920, 60 fps. See
+  [`data/README.md`](../data/README.md) for the license note.
+- Scene: a football (soccer) match — players on the pitch plus a stadium
+  crowd in the background, moderate-to-fast motion.
+- Processed: **600 frames** — the longest clip of the six examples.
+- **Note:** only the downscaled preview video is committed for this example
+  (`results/football/comparison_output_preview.mp4`); the full-size output
+  was too large to commit directly. See
+  [`data/README.md`](../data/README.md#a-note-on-large-outputs-eg-the-football-example).
+
+### Full metrics
+
+See [`metrics_summary.csv`](../results/football/metrics_summary.csv) for the
+raw row; summarized here:
+
+| Metric | YOLO11-seg (A) | Mask R-CNN (B) |
+|---|---:|---:|
+| Mean inference time | 50.0 ms/frame | 351.4 ms/frame |
+| Speed | 20.0 FPS | 2.8 FPS |
+| Mean objects detected / frame | 11.8 | 47.0 |
+| Distinct track IDs (whole clip) | 87 | 2,950 |
+| Mean temporal stability (IoU, same ID, consecutive frames) | 0.877 | 0.816 |
+| Mean A-vs-B mask agreement | 0.502 | 0.502 |
+
+Charts: [`metrics.png`](../results/football/metrics.png). Sample frames:
+[`contact_sheet.png`](../results/football/contact_sheet.png).
+
+### What the sample frames show
+
+- **YOLO11-seg (top row)** stays conservative: 10-15 detections per sampled
+  frame, all correctly labeled `person`, concentrated on foreground/midfield
+  players it's confident about. It doesn't attempt the blurry, distant
+  crowd in the stands.
+- **Mask R-CNN (bottom row)** finds far more (43-63/frame) — and unlike
+  citrus, harvesting, or poultry, **most of the extra detections are
+  legitimately `person`**: it's picking up small, distant spectators YOLO11
+  ignores at this confidence threshold. This is the first run where Mask
+  R-CNN's higher count looks mostly like genuine recall rather than
+  hallucination.
+- **Two real error patterns still show up:**
+  - **Mask fragmentation** — multiple overlapping `person` boxes on a
+    single visible player, the same pattern seen in the poultry run.
+  - **Hallucinated classes** — `chair` labels across the stadium seating
+    (plausible in the stands, wrong where a box sits on a player's legs in
+    frame 500), and one clearly wrong `tennis racket` label in frame 500,
+    with no tennis equipment anywhere in a football stadium. `sports ball`
+    is correctly detected in frame 300, showing the model *can* get
+    football-specific classes right when the object is unambiguous.
+
+### Interpretation
+
+- **This is the widest objects/frame gap of any run (4.0x, 11.8 vs 47.0)**,
+  but for a different reason than citrus/harvesting/poultry: it's driven
+  substantially by real crowd recall, not wrong-class hallucination. That
+  makes football a useful "control" in this series — it isolates
+  fragmentation and density effects from the vocabulary-gap problems seen
+  in the three preceding domains.
+- **Track-ID count (2,950) is the highest across all six runs** — well
+  above even the harvesting and aquarium vocabulary-gap cases. Unlike
+  those, this isn't from relabeling or camera panning; it's from a
+  genuinely dense, fast-moving, mutually-occluding crowd of real people,
+  which is close to a worst case for IoU-based tracking regardless of
+  vocabulary correctness.
+- **Speed dropped for both models relative to their usual range**
+  (YOLO11: 20.0 FPS here vs. 25-37 FPS elsewhere; Mask R-CNN: 2.8 FPS here
+  vs. 2.0-4.9 FPS elsewhere) — expected, since mask computation cost scales
+  with the number of detected instances, and this scene has the most
+  objects of any run.
+- **Practical takeaway:** for crowd-counting or sports-analytics use cases
+  where `person` recall genuinely matters (attendance estimation, player
+  tracking), Mask R-CNN's extra recall here is closer to a real advantage
+  than in the other domains — but the fragmentation and occasional
+  hallucinated classes (`chair`, `tennis racket`) mean raw object counts
+  still need a confidence/class-consistency filter before being trusted for
+  headcounts.
+
+### Caveats specific to this run
+
+- One match, one stadium, one crowd density — a different camera angle
+  (e.g. a broadcast wide shot vs. this closer view) would likely shift the
+  balance between foreground-player and background-crowd detections.
+- `CFG.CONF = 0.35` for both models, as in every other run; football's
+  wide range of object sizes (near players vs. distant spectators) makes
+  this threshold's effect on the recall gap worth testing explicitly as a
+  follow-up.
+- No ground-truth player or spectator count exists for this clip.

@@ -39,3 +39,13 @@ Pick one:
 For best results with this pipeline, use **vertical/portrait video** — the
 notebook center-crops landscape or square input to 9:16, which loses the
 sides of the frame.
+
+## A note on large outputs (e.g. the football example)
+
+Longer or higher-motion clips (more tracked objects, more mask detail) can
+produce large full-size `comparison_output.mp4` files. Where that made a
+full-size file impractical to commit, only the notebook's downscaled
+`_preview.mp4` is included in `results/<domain>/`. To regenerate the
+full-size version yourself, just re-run the notebook on the same source
+clip — `metrics_summary.csv` in that folder records which source video and
+settings were used.
