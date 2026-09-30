@@ -1,10 +1,11 @@
 # Results
 
-This repo has three example runs: a street scene, a citrus orchard, and a
-post-harvest sorting clip. The street run is closer to the article's typical
-VOS test footage; citrus stress-tests small/dense/occluded objects; the
-harvesting run stress-tests something harder still — objects with **no
-matching COCO class at all**.
+This repo has four example runs: a street scene, a citrus orchard, a
+post-harvest sorting clip, and a poultry farm. The street run is closer to
+the article's typical VOS test footage; citrus stress-tests small/dense/
+occluded objects; harvesting stress-tests objects with **no matching COCO
+class at all**; poultry stress-tests a scene where the class *does* exist
+but density and overlap still break both models, in a more easily-missed way.
 
 ## Example 1: Street scene
 
@@ -265,3 +266,95 @@ Charts: [`metrics.png`](../results/harvesting/metrics.png). Sample frames:
   R-CNN's hallucinated classes, not fewer.
 - No ground truth exists to quantify "how wrong" the hallucinated labels
   are beyond visual inspection of the contact sheet and video.
+
+## Example 4: Poultry farm
+
+### Input clip
+
+- Source: Pexels (portrait/vertical stock video), 1080x1920, 30 fps. See
+  [`data/README.md`](../data/README.md) for the license note.
+- Scene: a static-camera shot inside a poultry barn, dozens of chickens/
+  turkeys, densely packed and overlapping, similar texture and coloring
+  across individuals.
+- Processed: **449 frames**.
+
+### Full metrics
+
+See [`metrics_summary.csv`](../results/poultry/metrics_summary.csv) for the
+raw row; summarized here:
+
+| Metric | YOLO11-seg (A) | Mask R-CNN (B) |
+|---|---:|---:|
+| Mean inference time | 39.3 ms/frame | 269.8 ms/frame |
+| Speed | 25.4 FPS | 3.7 FPS |
+| Mean objects detected / frame | 7.0 | 28.1 |
+| Distinct track IDs (whole clip) | 59 | 1,011 |
+| Mean temporal stability (IoU, same ID, consecutive frames) | 0.934 | 0.873 |
+| Mean A-vs-B mask agreement | 0.526 | 0.526 |
+
+Charts: [`metrics.png`](../results/poultry/metrics.png). Sample frames:
+[`contact_sheet.png`](../results/poultry/contact_sheet.png).
+
+### What the sample frames show
+
+- **YOLO11-seg (top row)** is clean here — 7-8 detections per sampled frame,
+  every one correctly labeled `bird`, reasonably tight silhouettes around
+  each animal, confidences from 0.37 up to 0.92. Unlike citrus or
+  harvesting, there's no visible misclassification in these three frames.
+- **Mask R-CNN (bottom row)** also gets most detections right as `bird`
+  (poultry is at least visually close to COCO's `bird` class, unlike
+  harvesting's onions), but at ~4x more detections per frame two new
+  problems show up that weren't prominent in the first three runs:
+  - **Mask fragmentation:** several overlapping `bird` boxes/masks stacked
+    on what is visibly one animal, rather than one mask per bird.
+  - **Hallucinated classes within a mostly-correct frame:** a `banana`
+    label appears in the same corner across all three sampled frames
+    (almost certainly a bird's tail/neck at an odd angle), plus `person`,
+    `cow`, `cat`, and `teddy bear` in other frames — all on birds, none
+    correct.
+- **Why this failure mode is arguably more dangerous than harvesting's:** in
+  the harvesting clip, Mask R-CNN's output was obviously implausible (a
+  crate labeled `dining table`, onions as `apple`) — easy to notice was
+  wrong. Here, the large majority of the frame is correctly labeled `bird`,
+  so a handful of `banana`/`cow`/`cat` labels are easy to miss in a system
+  that isn't specifically watching for them, e.g. an automated headcount or
+  health-monitoring pipeline that just counts labeled instances.
+
+### Interpretation
+
+- **The objects/frame gap (4.0x, 7.0 vs 28.1) is the smallest of the three
+  agriculture-style runs (vs 4.4x harvesting, 5.2x citrus)** — consistent
+  with `bird` being an actual, well-represented COCO class, so Mask R-CNN's
+  extra detections are less about finding entirely missed objects and more
+  about over-segmenting the ones both models already see.
+- **Track-ID inflation (1,011 vs 59) here is a mix of both previous causes:**
+  some of it is genuine identity churn in a dense, static but partially
+  self-occluding flock (birds moving in and out of overlap), and some of it
+  is the same relabeling-as-new-object pattern seen in harvesting (a bird
+  briefly labeled `banana` then `bird` again looks like two different
+  tracked objects to the simple IoU tracker).
+- **Temporal stability (0.934/0.873) is the second-highest of the four
+  runs**, behind only harvesting — expected, since the camera is static in
+  both clips. High stability alone doesn't mean a clip is easy: it just
+  means each frame's segmentation error is at least internally consistent
+  frame-to-frame.
+- **Practical takeaway:** having the correct class available in COCO
+  (`bird`) is not sufficient for reliable results in a dense, overlapping
+  scene. A production poultry-counting or welfare-monitoring system would
+  need either a model fine-tuned specifically for this density/overlap
+  regime, or a detection-confidence and class-consistency filter to catch
+  exactly the kind of scattered hallucinated labels seen here.
+
+### Caveats specific to this run
+
+- One barn, one lighting setup, one species mix (the clip shows what looks
+  like a mix of chicken breeds/turkeys) — outdoor free-range or different
+  lighting could change both the hallucination pattern and the
+  fragmentation rate.
+- `CFG.CONF = 0.35` (both models) again controls the whole precision/recall
+  balance; the `banana`/`cow`/`cat` hallucinations here were around
+  0.4-0.5 confidence, so a stricter threshold would likely remove most of
+  them — worth testing as a quick follow-up before concluding fine-tuning
+  is strictly necessary.
+- No ground-truth bird count exists for this clip, so neither model's
+  object count can be checked against a true headcount.
